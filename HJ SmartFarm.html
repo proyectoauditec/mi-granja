@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Huevo juanito</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body { font-family: -apple-system; background:#f2f2f2; margin:0; }
+header { background:#2e7d32; color:white; padding:15px; text-align:center; font-size:20px; }
+.container { padding:15px; }
+
+.card {
+  background:white;
+  border-radius:15px;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+input, button {
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:10px;
+  border:1px solid #ccc;
+}
+
+button {
+  background:#4caf50;
+  color:white;
+  border:none;
+  font-size:16px;
+}
+
+.registro {
+  border-bottom:1px solid #eee;
+  padding:10px 0;
+}
+
+.ganancia { color:green; }
+.perdida { color:red; }
+</style>
+</head>
+
+<body>
+
+<header>🐔 Huevo Juanito </header>
+
+<div class="container">
+
+<div class="card">
+<h3> Costo de alimento</h3>
+<input id="precio" placeholder="Precio bulto">
+<input id="kgBulto" placeholder="Kg bulto">
+<button onclick="config()">Guardar</button>
+</div>
+
+<div class="card">
+<h3>📅 Nuevo registro</h3>
+<input type="date" id="fecha">
+<input id="huevos" placeholder="Huevos">
+<input id="kg" placeholder="Kg consumidos">
+<input id="ventas" placeholder="Ventas">
+<button onclick="guardar()">Guardar</button>
+</div>
+
+<div class="card">
+<h3>📊 Gráfica</h3>
+<canvas id="grafica"></canvas>
+</div>
+
+<div class="card">
+<h3>📋 Historial</h3>
+<div id="lista"></div>
+</div>
+
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+function getData(){
+  return JSON.parse(localStorage.getItem("datos")) || [];
+}
+
+function config(){
+  let costoKg = precio.value / kgBulto.value;
+  localStorage.setItem("costoKg", costoKg);
+  alert("Costo por kg: $" + costoKg.toFixed(2));
+}
+
+function guardar(){
+  let data = getData();
+
+  let costoKg = localStorage.getItem("costoKg") || 0;
+  let costo = kg.value * costoKg;
+
+  data.push({
+    fecha: fecha.value,
+    huevos: Number(huevos.value),
+    kg: Number(kg.value),
+    ventas: Number(ventas.value),
+    costo: costo
+  });
+
+  localStorage.setItem("datos", JSON.stringify(data));
+
+  render();
+}
+
+function render(){
+  let data = getData();
+  let lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  let fechas = [];
+  let produccion = [];
+
+  data.forEach(d=>{
+    let ganancia = d.ventas - d.costo;
+    let color = ganancia>=0 ? "ganancia":"perdida";
+
+    lista.innerHTML += `
+    <div class="registro">
+    <b>${d.fecha}</b><br>
+    🥚 ${d.huevos} | 🌽 ${d.kg}kg<br>
+    💰 $${d.ventas} | 💸 $${d.costo.toFixed(2)}<br>
+    <span class="${color}">Resultado: $${ganancia.toFixed(2)}</span>
+    </div>`;
+
+    fechas.push(d.fecha);
+    produccion.push(d.huevos);
+  });
+
+  new Chart(document.getElementById("grafica"), {
+    type: 'line',
+    data: {
+      labels: fechas,
+      datasets: [{
+        label: 'Huevos',
+        data: produccion
+      }]
+    }
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
